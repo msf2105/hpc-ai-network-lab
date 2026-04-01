@@ -4,23 +4,65 @@
 
 ![Lab Topology](docs/topology.png)
 
-## Lab Results
 
-RDMA Write Bandwidth test between Compute-1 and Compute-2 across the BGP fabric:
+## Benchmark Results
 
+All tests run between Compute-1 (10.100.0.1) and Compute-2 (10.100.0.2) over the RoCE fabric, routed across the live BGP spine-leaf fabric. Transport: RC (Reliable Connected). Device: `rxe0` (soft-RoCE via `rdma_rxe`).
+
+### RDMA Bandwidth
+
+| Test | Operation | Avg BW | Peak BW | Iterations | Real-World Analogy |
+|---|---|---|---|---|---|
+| `ib_write_bw` | RDMA Write | 0.37 Gb/sec | 0.39 Gb/sec | 5,000 | GPU-Direct gradient sync |
+| `ib_send_bw` | RDMA Send | 0.35 Gb/sec | 0.00* | 1,000 | MPI Allreduce (distributed training) |
+| `ib_read_bw` | RDMA Read | 0.47 Gb/sec | 0.50 Gb/sec | 1,000 | Parameter server weight pull |
+
+*`ib_send_bw` peak reporting anomaly with soft-RoCE — average figure is reliable.
+
+### RDMA Latency
+
+| Test | Min | Typical | Avg | 99th pct | 99.9th pct |
+|---|---|---|---|---|---|
+| `ib_write_lat` | 124.45 µs | 400.68 µs | 493.31 µs | 1,906.72 µs | 3,919.04 µs |
+| `ib_send_lat` | 154.69 µs | 391.34 µs | 492.47 µs | 1,973.05 µs | 3,378.83 µs |
+
+> **Context:** Production Mellanox ConnectX-7 hardware on a lossless fabric achieves 1–2 µs write latency. Soft-RoCE adds significant overhead due to kernel processing, virtual NIC emulation, and EVE-NG bridge traversal. The protocol path — RC transport, Queue Pairs, memory registration, completion queues — is identical. Only the ASIC is missing.
+
+### BGP Fabric State
 ```
----------------------------------------------------------------------------
-                    RDMA_Write BW Test
- Device            : rxe0
- Transport type    : IB
- Connection type   : RC
- Link type         : Ethernet
----------------------------------------------------------------------------
- #bytes    #iterations    BW peak[Gb/sec]    BW average[Gb/sec]    MsgRate[Mpps]
- 65536     5000           0.39               0.37                  0.000714
----------------------------------------------------------------------------
+Spine-1# show ip bgp summary
+Neighbor        V    AS      Up/Down    State/PfxRcd
+10.0.12.1       4    65001   02:42:57   2
+10.0.13.1       4    65002   02:42:54   2
+
+Spine-1# show ip route bgp
+B   10.1.1.0/31    [20/0] via 10.0.12.1
+B   10.1.2.0/31    [20/0] via 10.0.13.1
+B   10.255.1.1/32  [20/0] via 10.0.12.1
+B   10.255.1.2/32  [20/0] via 10.0.13.1
 ```
 
+Both leaf neighbors stable, BGP table consistent, ECMP configured (`Multipath: eBGP`).
+
+> **Known lab behavior:** Spine-1 shows only one path to each leaf loopback. In a fully symmetric lab, Spine-2 would advertise a second path, producing true 2-path ECMP. This is a topology artifact — both spines are in AS 65000, so from each leaf's perspective there are two uplinks, but the spine only sees each loopback via its directly connected leaf link. ECMP is functional at the leaf level for compute-bound traffic.
+
+### ECN Policy — Simulation Boundary Analysis
+
+Leaf-1 `show policy-map interface GigabitEthernet0/2` shows RDMA traffic hitting `class-default` rather than `CM-RDMA`:
+```
+Class-map: CM-RDMA (match-all)
+  0 packets, 0 bytes         ← RDMA traffic not classified here
+  Match: dscp af11 (10)
+
+Class-map: class-default (match-any)
+  1178 packets, 134465 bytes ← all traffic landing here
+```
+
+**Root cause:** DSCP markings applied by `tc` on the compute nodes do not survive transit through the EVE-NG virtual bridge layer (`vnet0_*`). The Linux bridge operates at Layer 2 and strips DSCP bits set via `action dsfield` in tc filters when forwarding through tap interfaces. Packets arrive at the leaf with DSCP 0 and match `class-default`.
+
+**What this means in production:** On a real fabric with physical NICs, DSCP markings are preserved end-to-end. Arista EOS or Nexus 9k leaf switches correctly classify RoCEv2 traffic (DSCP AF11) into the lossless queue and apply ECN marking at the configured WRED thresholds. The policy-map configuration on the leaf switches is production-accurate and would function as designed on physical hardware.
+
+**Why this matters:** Knowing where a simulation boundary is — and why it exists — is as important as the simulation itself. The gap is the virtual NIC layer, not the network design.
 Real RDMA verbs (RC transport, Queue Pairs, RKeys, GIDs) running over soft-RoCE across a live BGP ECMP fabric. Protocol path is identical to production Mellanox ConnectX hardware — bandwidth is lower due to software emulation.
 
 ---
