@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<lab name="hpc-ai-network-lab" id="b1c2d3e4-f5a6-7b8c-9d0e-1f2a3b4c5d6e" version="1" scripttimeout="300" lock="0" description="HPC/AI Network Lab: BGP Spine-Leaf, RoCEv2/RDMA, ECN/PFC" author="msf2105">
+  <topology>
+    <nodes>
+      <node id="1" name="Jump-Monitor" type="qemu" template="linux" image="linux-linux-ubuntu-server-20.04" console="telnet" cpu="1" cpulimit="0" ram="512" ethernet="1" uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567801" firstmac="50:00:00:01:00:00" qemu_options="-machine type=pc,accel=kvm -vga std -usbdevice tablet -boot order=cd -cpu host" qemu_version="2.12.0" qemu_arch="x86_64" qemu_nic="virtio-net-pci" delay="0" icon="Server.png" config="0" left="588" top="30">
+        <interface id="0" name="eth0" type="ethernet" network_id="8"/>
+      </node>
+      <node id="2" name="Spine-1" type="qemu" template="vios" image="vios-adventerprisek9-m.SPA.159-3.M6" console="telnet" cpu="1" cpulimit="0" ram="512" ethernet="3" uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567802" qemu_options="-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -nodefaults -rtc base=utc -cpu host" qemu_version="2.4.0" qemu_arch="x86_64" delay="0" icon="Router.png" config="0" left="222" top="200">
+        <interface id="0" name="Gi0/0" type="ethernet" network_id="1"/>
+        <interface id="1" name="Gi0/1" type="ethernet" network_id="2"/>
+        <interface id="2" name="Gi0/2" type="ethernet" network_id="8"/>
+      </node>
+      <node id="3" name="Spine-2" type="qemu" template="vios" image="vios-adventerprisek9-m.SPA.159-3.M6" console="telnet" cpu="1" cpulimit="0" ram="512" ethernet="3" uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567803" qemu_options="-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -nodefaults -rtc base=utc -cpu host" qemu_version="2.4.0" qemu_arch="x86_64" delay="0" icon="Router.png" config="0" left="954" top="200">
+        <interface id="0" name="Gi0/0" type="ethernet" network_id="3"/>
+        <interface id="1" name="Gi0/1" type="ethernet" network_id="4"/>
+        <interface id="2" name="Gi0/2" type="ethernet" network_id="8"/>
+      </node>
+      <node id="4" name="Leaf-1" type="qemu" template="vios" image="vios-adventerprisek9-m.SPA.159-3.M6" console="telnet" cpu="1" cpulimit="0" ram="512" ethernet="4" uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567804" qemu_options="-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -nodefaults -rtc base=utc -cpu host" qemu_version="2.4.0" qemu_arch="x86_64" delay="0" icon="Router.png" config="0" left="222" top="450">
+        <interface id="0" name="Gi0/0" type="ethernet" network_id="1"/>
+        <interface id="1" name="Gi0/1" type="ethernet" network_id="3"/>
+        <interface id="2" name="Gi0/2" type="ethernet" network_id="5"/>
+        <interface id="3" name="Gi0/3" type="ethernet" network_id="8"/>
+      </node>
+      <node id="5" name="Leaf-2" type="qemu" template="vios" image="vios-adventerprisek9-m.SPA.159-3.M6" console="telnet" cpu="1" cpulimit="0" ram="512" ethernet="4" uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567805" qemu_options="-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -nodefaults -rtc base=utc -cpu host" qemu_version="2.4.0" qemu_arch="x86_64" delay="0" icon="Router.png" config="0" left="954" top="450">
+        <interface id="0" name="Gi0/0" type="ethernet" network_id="2"/>
+        <interface id="1" name="Gi0/1" type="ethernet" network_id="4"/>
+        <interface id="2" name="Gi0/2" type="ethernet" network_id="6"/>
+        <interface id="3" name="Gi0/3" type="ethernet" network_id="8"/>
+      </node>
+      <node id="6" name="Compute-1" type="qemu" template="linux" image="linux-linux-ubuntu-server-20.04" console="telnet" cpu="1" cpulimit="0" ram="512" ethernet="3" uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567806" firstmac="50:00:00:06:00:00" qemu_options="-machine type=pc,accel=kvm -vga std -usbdevice tablet -boot order=cd -cpu host" qemu_version="2.12.0" qemu_arch="x86_64" qemu_nic="virtio-net-pci" delay="0" icon="Server.png" config="0" left="222" top="660">
+        <interface id="0" name="eth0" type="ethernet" network_id="5"/>
+        <interface id="1" name="eth1" type="ethernet" network_id="7"/>
+        <interface id="2" name="eth2" type="ethernet" network_id="8"/>
+      </node>
+      <node id="7" name="Compute-2" type="qemu" template="linux" image="linux-linux-ubuntu-server-20.04" console="telnet" cpu="1" cpulimit="0" ram="512" ethernet="3" uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567807" firstmac="50:00:00:07:00:00" qemu_options="-machine type=pc,accel=kvm -vga std -usbdevice tablet -boot order=cd -cpu host" qemu_version="2.12.0" qemu_arch="x86_64" qemu_nic="virtio-net-pci" delay="0" icon="Server.png" config="0" left="954" top="660">
+        <interface id="0" name="eth0" type="ethernet" network_id="6"/>
+        <interface id="1" name="eth1" type="ethernet" network_id="7"/>
+        <interface id="2" name="eth2" type="ethernet" network_id="8"/>
+      </node>
+    </nodes>
+    <networks>
+      <network id="1" type="bridge" name="Spine1-Leaf1"    left="222" top="325" visibility="1" icon="lan.png"/>
+      <network id="2" type="bridge" name="Spine1-Leaf2"    left="588" top="325" visibility="1" icon="lan.png"/>
+      <network id="3" type="bridge" name="Spine2-Leaf1"    left="771" top="325" visibility="1" icon="lan.png"/>
+      <network id="4" type="bridge" name="Spine2-Leaf2"    left="954" top="325" visibility="1" icon="lan.png"/>
+      <network id="5" type="bridge" name="Leaf1-Compute1"  left="222" top="555" visibility="1" icon="lan.png"/>
+      <network id="6" type="bridge" name="Leaf2-Compute2"  left="954" top="555" visibility="1" icon="lan.png"/>
+      <network id="7" type="bridge" name="RoCE-Fabric"     left="588" top="660" visibility="1" icon="lan.png"/>
+      <network id="8" type="bridge" name="OOB-MGMT"        left="1200" top="30" visibility="1" icon="lan.png"/>
+    </networks>
+  </topology>
+</lab>
