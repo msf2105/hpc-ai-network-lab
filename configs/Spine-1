@@ -1,0 +1,56 @@
+hostname Spine-1
+!
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+ip cef
+no ip domain lookup
+!
+interface Loopback0
+ description RID-BGP-Source
+ ip address 10.255.0.1 255.255.255.255
+!
+interface GigabitEthernet0/0
+ description TO-Leaf-1
+ ip address 10.0.12.0 255.255.255.254
+ no shutdown
+!
+interface GigabitEthernet0/1
+ description TO-Leaf-2
+ ip address 10.0.13.0 255.255.255.254
+ no shutdown
+!
+interface GigabitEthernet0/2
+ description OOB-MGMT
+ ip address 192.168.100.1 255.255.255.0
+ no shutdown
+!
+router bgp 65000
+ bgp router-id 10.255.0.1
+ bgp log-neighbor-changes
+ neighbor 10.0.12.1 remote-as 65001
+ neighbor 10.0.12.1 description eBGP-to-Leaf-1
+ neighbor 10.0.13.1 remote-as 65002
+ neighbor 10.0.13.1 description eBGP-to-Leaf-2
+ !
+ address-family ipv4
+  network 10.255.0.1 mask 255.255.255.255
+  neighbor 10.0.12.1 activate
+  neighbor 10.0.12.1 soft-reconfiguration inbound
+  neighbor 10.0.13.1 activate
+  neighbor 10.0.13.1 soft-reconfiguration inbound
+  maximum-paths 2
+ exit-address-family
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line vty 0 15
+ exec-timeout 0 0
+ privilege level 15
+ login
+ transport input all
+!
+end
